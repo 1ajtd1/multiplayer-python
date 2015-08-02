@@ -22,9 +22,10 @@ playerPosY = 0
 playerVelX = 0.0
 playerVelY = 0.0
 
-speed = 0.02
-maxSpeed = 0.2
+speed = 0.5
+maxSpeed = 2.5
 
+screen_flags = DOUBLEBUF | OPENGL# | FULLSCREEN
 #ast.literal_eval()
 def make_dict(data):
 	return ast.literal_eval(data)
@@ -38,11 +39,12 @@ data = '{"name":[22,32,44,44] , "name2":[123,321,22,44]}'
 
 
 def load_map(data):
+	data = make_dict(data)
+
 	for i in data:
 		entities[i] = data[i]
 
-	data = make_dict(data)
-	
+
 
 def delete(I):
 	del entities[I]
@@ -72,14 +74,15 @@ def rect(x,y,w,h,color):
 
 def clearScreen():
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
+	load_map(data)
 
 def main():
 	global users,playerPosX,playerPosY,playerVelX,playerVelY
 
 	pygame.init()
 	display = (1080,720)
-	pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
+	pygame.display.set_mode(display, screen_flags)
+	pygame.display.set_caption("Game")
 
 	glViewport(0, 0, 1080, 720)
 	glMatrixMode(GL_PROJECTION)
@@ -87,12 +90,14 @@ def main():
 	glOrtho(0.0, 1080, 0.0, 720, 0.0, 1.0)
 	glMatrixMode (GL_MODELVIEW)
 	glLoadIdentity()
+
 	pygame.mouse.set_visible(True)
 	playerPosX = 100
 	playerPosY = 100
 	pygame.key.set_repeat(1, 0)
 	
 	while True:
+		
 		playerPosX += playerVelX
 		playerPosY += playerVelY
 
@@ -100,6 +105,17 @@ def main():
 		mouseX = mousePos[0]
 		mouseY = 720 - mousePos[1]
 
+		if playerVelX > maxSpeed:
+			playerVelX = maxSpeed
+		
+		if playerVelX < -maxSpeed:
+			playerVelX = -maxSpeed
+
+		if playerVelY > maxSpeed:
+			playerVelY = maxSpeed
+
+		if playerVelY < -maxSpeed:
+			playerVelY = -maxSpeed
 
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
@@ -107,11 +123,11 @@ def main():
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_q:
 					exit()
-				if event.key == pygame.K_e:
-					pygame.key.set_repeat(50, 50)
-					spawn(str(users),mouseX,mouseY,30,30)
-					users += 1
-					pygame.key.set_repeat(1, 0)
+				# if event.key == pygame.K_e:
+				# 	pygame.key.set_repeat(50, 50)
+				# 	spawn(str(users),mouseX,mouseY,30,30)
+				# 	users += 1
+				# 	pygame.key.set_repeat(1, 0)
 
 				if event.key == pygame.K_w:
 					playerVelY += speed
@@ -124,7 +140,16 @@ def main():
 				
 				if event.key == pygame.K_d:
 					playerVelX += speed
-				
+			
+			elif event.type == pygame.KEYUP:
+				if event.key == pygame.K_d:
+					playerVelX = 0
+				if event.key == pygame.K_a:
+					playerVelX = 0
+				if event.key == pygame.K_w:
+					playerVelY = 0
+				if event.key == pygame.K_s:
+					playerVelY = 0
 
 
 				
@@ -136,4 +161,7 @@ def main():
 		player(playerPosX,playerPosY)
 		pygame.display.flip()
 		pygame.time.wait(2)
+
+
+
 main()
