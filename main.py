@@ -1,4 +1,4 @@
-import pygame,socket,math
+import pygame,socket,math,time
 import OpenGL
 from pygame.locals import *
 from OpenGL.GL import *
@@ -6,6 +6,12 @@ from OpenGL.GLU import *
 import random
 from random import randint
 import ast
+import threading
+
+host = raw_input("host: ")
+port = int(raw_input("port: "))
+s = socket.socket()
+s.connect( ( host , port ) )
 
 #colors
 red = [1.0,0,0]
@@ -27,16 +33,15 @@ maxSpeed = 2.5
 
 screen_flags = DOUBLEBUF | OPENGL# | FULLSCREEN
 #ast.literal_eval()
-def make_dict(data):
-	return ast.literal_eval(data)
 
 users = 0
 
 entities = {}
 
-data = '{"name":[22,32,44,44] , "name2":[123,321,22,44]}'
+data = '{}'
 
-
+def make_dict(data):
+	return ast.literal_eval(data)
 
 def load_map(data):
 	data = make_dict(data)
@@ -44,10 +49,11 @@ def load_map(data):
 	for i in data:
 		entities[i] = data[i]
 
+load_map(data)
 
 
-def delete(I):
-	del entities[I]
+def delete(ID):
+	del entities[ID]
 
 def spawn(name,x,y,w,h):
 	entities[name] = [x , y , w ,h]
@@ -74,10 +80,17 @@ def rect(x,y,w,h,color):
 
 def clearScreen():
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-	load_map(data)
+
+
+def send_data(x,y):
+	global s , host , port
+	s.send("/pos" + str([x , y]))
+	s.send("/ping")
+
+
 
 def main():
-	global users,playerPosX,playerPosY,playerVelX,playerVelY
+	global users , playerPosX , playerPosY , playerVelX , playerVelY , s
 
 	pygame.init()
 	display = (1080,720)
@@ -92,11 +105,18 @@ def main():
 	glLoadIdentity()
 
 	pygame.mouse.set_visible(True)
-	playerPosX = 100
-	playerPosY = 100
+	playerPosX = randint(1,1000)
+	playerPosY = randint(1,720)
 	pygame.key.set_repeat(1, 0)
 	
+
+
 	while True:
+		dat = s.recv(1024)
+
+		if "/add_entity" in dat:
+			dat = dat[12:]
+			load_map(dat)
 		
 		playerPosX += playerVelX
 		playerPosY += playerVelY
@@ -123,11 +143,6 @@ def main():
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_q:
 					exit()
-				# if event.key == pygame.K_e:
-				# 	pygame.key.set_repeat(50, 50)
-				# 	spawn(str(users),mouseX,mouseY,30,30)
-				# 	users += 1
-				# 	pygame.key.set_repeat(1, 0)
 
 				if event.key == pygame.K_w:
 					playerVelY += speed
@@ -156,6 +171,7 @@ def main():
 			else:
 				break
 
+		send_data(playerPosX , playerPosY)
 		clearScreen()
 		enemy()
 		player(playerPosX,playerPosY)
