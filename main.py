@@ -35,12 +35,15 @@ maxSpeed = 2.5
 
 screen_flags = DOUBLEBUF | OPENGL# | FULLSCREEN
 #ast.literal_eval()
+running = True
 
 users = 0
 
 entities = {}
 
 data = '{}'
+
+name = None
 
 def make_dict(data):
 	return ast.literal_eval(data)
@@ -49,7 +52,7 @@ def load_map(data):
 	data = make_dict(data)
 
 	for i in data:
-		entities[i] = data[i]
+		entities[str(i)] = data[str(i)]
 
 load_map(data)
 
@@ -87,21 +90,35 @@ def clearScreen():
 def send_data(x,y):
 	global s , host , port
 	s.send("/pos" + str([x , y]))
-	s.send("/ping")
 
 def recv_data(s , host , port):
 	while True:
 		try:
-			recived = s.recv(1024)[:-1]
+			recived = s.recv(1024)
+			# if "/name" in recived:
+			# 	data = recived
+			# 	data = data[5:]
+			# 	name = data
+			# 	print "name: "+name
+			
 			if "/add_entity" in recived:
 				data = recived
-				print data
-				#load_map(data)
+				data = data.replace("\n","")
+				data = data.replace("/add_entity","")
+				#print data
+				load_map(data)
+			# if "/entity" in recived:
+			# 	data = recived
+			# 	data = data[7:]
+			# 	load_map(data)
+		
 		except socket.error as error:
 			print ("[ERR] " + str(socket.error))
+		
+		
 
 def main():
-	global users , playerPosX , playerPosY , playerVelX , playerVelY , s
+	global users , playerPosX , playerPosY , playerVelX , playerVelY , s , threads , running
 
 	pygame.init()
 	display = (1080,720)
@@ -180,7 +197,7 @@ def main():
 			else:
 				break
 
-		send_data(playerPosX , playerPosY)
+		#send_data(playerPosX , playerPosY)
 		clearScreen()
 		enemy()
 		player(playerPosX,playerPosY)
