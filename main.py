@@ -13,6 +13,8 @@ port = int(raw_input("port: "))
 s = socket.socket()
 s.connect( ( host , port ) )
 
+threads = []
+
 #colors
 red = [1.0,0,0]
 green = [0.0,1.0,0]
@@ -87,7 +89,16 @@ def send_data(x,y):
 	s.send("/pos" + str([x , y]))
 	s.send("/ping")
 
-
+def recv_data(s , host , port):
+	while True:
+		try:
+			recived = s.recv(1024)[:-1]
+			if "/add_entity" in recived:
+				data = recived
+				print data
+				#load_map(data)
+		except socket.error as error:
+			print ("[ERR] " + str(socket.error))
 
 def main():
 	global users , playerPosX , playerPosY , playerVelX , playerVelY , s
@@ -108,15 +119,13 @@ def main():
 	playerPosX = randint(1,1000)
 	playerPosY = randint(1,720)
 	pygame.key.set_repeat(1, 0)
-	
+	t = threading.Thread(target=recv_data, args=(s , host , port))
+	t.start()
+	threads.append(t)
 
 
 	while True:
-		dat = s.recv(1024)
 
-		if "/add_entity" in dat:
-			dat = dat[12:]
-			load_map(dat)
 		
 		playerPosX += playerVelX
 		playerPosY += playerVelY

@@ -9,21 +9,23 @@ s.bind( ( host , port ) )
 
 s.listen(5)
 
-connections = {}
+connections = {"asdf":[123,321,30,30]}
 users = 0
 
 def load(data):
 	connections[data] = [0,0]
 
+def send(c,addr):
+	global users
+	c.send('/add_entity ' + str(connections["asdf"]))
+	users += 1
+	load(addr)
 
 def main():
 	global users
 	while True:
 		c , addr = s.accept()
-		c.send('/add_entity {"user['+str(users)+']":[50,50,30,30]}')
-		users += 1
-		load(addr)
-
+		send(c , addr)
 		
 		
 main()
