@@ -1,12 +1,10 @@
-import pygame,socket,math,time
+import pygame,socket,math,time,sys,ast,threading
 import OpenGL
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import random
 from random import randint
-import ast
-import threading
 
 host = raw_input("host: ")
 port = int(raw_input("port: "))
@@ -52,7 +50,11 @@ def load_map(data):
 	data = make_dict(data)
 
 	for i in data:
-		entities[str(i)] = data[str(i)]
+		try:
+			entities[str(i)] = data[str(i)]
+		
+		except SyntaxError as error:
+			print "[ERR] "+str(error)
 
 load_map(data)
 
@@ -89,28 +91,30 @@ def clearScreen():
 
 def send_data(x,y):
 	global s , host , port
-	s.send("/pos" + str([x , y]))
+	s.send("/pos")
+	s.send(str(x) + ","+ str(y))
 
 def recv_data(s , host , port):
 	while True:
 		try:
 			recived = s.recv(1024)
-			# if "/name" in recived:
-			# 	data = recived
-			# 	data = data[5:]
-			# 	name = data
-			# 	print "name: "+name
-			
-			if "/add_entity" in recived:
-				data = recived
-				data = data.replace("\n","")
-				data = data.replace("/add_entity","")
-				#print data
-				load_map(data)
-			# if "/entity" in recived:
-			# 	data = recived
-			# 	data = data[7:]
-			# 	load_map(data)
+
+			if recived == "/add_entity":
+				data = s.recv(1024)
+				data = str(data)
+				
+				if "/add_entity" in data:
+					data = data.replace("/add_entity" , "")
+				data = data.split("&")
+				
+				if "}" not in data[ int(len( data )) -1 ]:
+					del data[int(len(data)) - 1]
+				
+				for i in range( 0, int(len(data)) ):
+					load_map(data[ int(i) ])
+
+
+
 		
 		except socket.error as error:
 			print ("[ERR] " + str(socket.error))
@@ -197,7 +201,7 @@ def main():
 			else:
 				break
 
-		#send_data(playerPosX , playerPosY)
+		send_data(playerPosX , playerPosY)
 		clearScreen()
 		enemy()
 		player(playerPosX,playerPosY)

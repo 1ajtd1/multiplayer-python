@@ -2,6 +2,7 @@ import socket
 import time
 import threading
 import random
+import sys
 from random import *
 
 host = raw_input("host: ")
@@ -33,22 +34,39 @@ def send(c,addr):
 		c.send('/add_entity' + str(block))
 		users += 1
 		load(addr)
+	
 	except socket.error as error:
-		print("[ERR]" + str(error))
+		print("[ERR] " + str(error))
 
+def recv_all():
+	for c in conn:
+		recived = c.recv(1024)
+		if recived == "/pos":
+			data = c.recv(1024)
+			if "/pos" in data:
+				data = data.replace("/pos" , "")
+			
+			data = data.split(",")
 
+			POS_X = float(data[0])
+			POS_Y = float(data[1])
+			
+			POS_X = int(POS_X)
+			POS_Y = int(POS_Y)
+			if POS_X != None and POS_Y != None and POS_X != "" and POS_Y != "":
+				connections[str(c)] = [ POS_X - 16 , POS_Y - 16 , 32 , 32]
 
 def send_all():
 	global users
 	for c in conn:
 		try:
-			#c.send("/add_entity" + str(connections))
-			#c.send("\n")
-			#c.send("/add_entity"+'{box:[25,25,30,30]}')
-			users += 1
-		
+			c.send("/add_entity")
+			c.send( str( connections ) + "&")
+
 		except socket.error as error:
-			print("[ERR]" + str(error))
+			print("[ERR] " + str(error))
+
+
 
 def new_connection(s , host , port):
 	global users
@@ -56,8 +74,8 @@ def new_connection(s , host , port):
 		c , addr = s.accept()
 		print("[ALERT] New connection: " + str(addr[0])) + " : "+str(addr[1])
 		conn.append(c)
-		connections[str(addr[1])] = [100,100,30,30]
-		send(c , addr)
+		connections[str(c)] = [100,100,32,32]
+
 		main()
 
 def main():
@@ -66,6 +84,7 @@ def main():
 	threads.append(t)
 	while True:
 		send_all()
+		recv_all()
 		
 		
 main()
