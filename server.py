@@ -24,6 +24,7 @@ users = 0
 
 threads = []
 
+old_recv = ""
 def load(data):
 	connections[data] = [0,0,30,30]
 
@@ -39,42 +40,66 @@ def send(c,addr):
 		print("[ERR] " + str(error))
 
 def recv_all():
+	global old_recv
 	for c in conn:
-		recived = c.recv(1024)
-		if recived == "/pos":
-			data = c.recv(1024)
-			if "/pos" in data:
-				data = data.replace("/pos" , "")
+		try:
+			recived = old_recv +  c.recv(1024)
 			
-			data = data.split(",")
+			recived = recived.split("&")
 
-			POS_X = float(data[0])
-			POS_Y = float(data[1])
+			old_recv = recived[int(len(recived)) - 1]
 			
-			POS_X = int(POS_X)
-			POS_Y = int(POS_Y)
-			if POS_X != None and POS_Y != None and POS_X != "" and POS_Y != "":
-				connections[str(c)] = [ POS_X - 16 , POS_Y - 16 , 32 , 32]
+			del recived[int(len(recived)) - 1]
+
+			for i in range(0,int(len(recived))):
+				if "/pos" in recived[i]:
+					data = recived[i]
+					data = data.replace("/pos" , "")
+					data = data.split(",")
+					
+					POS_X = data[0]
+					POS_Y = data[1]
+
+					POS_X = float(data[0])
+					POS_Y = float(data[1])
+					
+					POS_X = int(POS_X)
+					POS_Y = int(POS_Y)
+					
+
+					connections[str(c)] = [ POS_X - 15 , POS_Y - 15 , 30 , 30]
+		except:
+			socket.error
 
 def send_all():
 	global users
 	for c in conn:
 		try:
-			c.send("/add_entity")
-			c.send( str( connections ) + "&")
+			client = str(c)
+			c.send("/add" + str( connections ) + "&")
 
-		except socket.error as error:
-			print("[ERR] " + str(error))
+		
+		except socket.error:
+			try:
+				
+				if connections[client]:
+					del connections[client]
 
+				
+					for c in conn:
+						c.send("/del")
+						c.send(str(data) + "&")
+			except:
+				KeyError
 
 
 def new_connection(s , host , port):
 	global users
 	while True:
 		c , addr = s.accept()
-		print("[ALERT] New connection: " + str(addr[0])) + " : "+str(addr[1])
+		print("[ALERT] New connection from: " + str(addr[0])) + " : "+str(addr[1])
 		conn.append(c)
-		connections[str(c)] = [100,100,32,32]
+		connections[str(c)] = [100,100,30,30]
 
 		main()
 
