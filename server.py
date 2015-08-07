@@ -18,22 +18,20 @@ connections = {}
 
 conn = []
 
-block = {"block_1":[randint(1,1000),randint(1,700),30,30]}
+block = {}
 
 users = 0
 
 threads = []
 
 old_recv = ""
+
 def load(data):
-	connections[data] = [0,0,30,30]
+	connections[data] = [0,0,30,30,"red"]
 
 def send(c,addr):
 	global users
 	try:
-		#c.send("/name"+str(addr))
-		c.send('/add_entity' + str(block))
-		users += 1
 		load(addr)
 	
 	except socket.error as error:
@@ -51,23 +49,26 @@ def recv_all():
 			
 			del recived[int(len(recived)) - 1]
 
-			for i in range(0,int(len(recived))):
-				if "/pos" in recived[i]:
+			for i in range(0, int(len(recived))):
+				if "/dat" in recived[i]:
 					data = recived[i]
-					data = data.replace("/pos" , "")
+					data = data.replace("/dat" , "")
 					data = data.split(",")
+					try:
+						POS_X = data[0]
+						POS_Y = data[1]
+						COLOR = data[2]
+						
+						POS_X = float(data[0])
+						POS_Y = float(data[1])
+						
+						POS_X = int(POS_X)
+						POS_Y = int(POS_Y)
+						
+						connections[str(c)] = [ POS_X - 15 , POS_Y - 15 , 30 , 30 , COLOR ]
 					
-					POS_X = data[0]
-					POS_Y = data[1]
-
-					POS_X = float(data[0])
-					POS_Y = float(data[1])
-					
-					POS_X = int(POS_X)
-					POS_Y = int(POS_Y)
-					
-
-					connections[str(c)] = [ POS_X - 15 , POS_Y - 15 , 30 , 30]
+					except:
+						KeyError
 		except:
 			socket.error
 
@@ -99,7 +100,7 @@ def new_connection(s , host , port):
 		c , addr = s.accept()
 		print("[ALERT] New connection from: " + str(addr[0])) + " : "+str(addr[1])
 		conn.append(c)
-		connections[str(c)] = [100,100,30,30]
+		connections[str(c)] = [0,0,30,30,"blue"]
 
 		main()
 

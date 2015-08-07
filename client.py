@@ -8,6 +8,7 @@ from random import randint
 
 host = raw_input("host: ")
 port = int(raw_input("port: "))
+playerColor = raw_input("color: ")
 s = socket.socket()
 s.connect( ( host , port ) )
 
@@ -15,11 +16,11 @@ threads = []
 
 
 
-playerW = 30
-playerH = 30
+playerW = 26
+playerH = 26
 
-WIDTH = 1080
-HEIGTH = 720
+WIDTH = 720 #1080 / 2
+HEIGTH = 540 #720 / 2
 SCREEN_X = 0
 SCREEN_Y = 0
 
@@ -27,6 +28,11 @@ playerPosX = WIDTH / 2
 playerPosY = HEIGTH / 2
 playerVelX = 0.0
 playerVelY = 0.0
+
+CollisionLeft = False
+CollisionRight = False
+CollisionTop = False
+CollisionBottom = False
 
 speed = 0.5
 maxSpeed = 2.5
@@ -41,10 +47,10 @@ users = 0
 
 entities = {}
 
-MAP = {"0":[0,0,800,10],
-"1":[0,0,10,800],
-"2":[0,800,800,10],
-"3":[800,0,10,800]
+MAP = {"0":[100,50,10,100,"white"],
+# "1":[0,0,10,800],
+# "2":[0,800,800,10],
+# "3":[800,0,10,800]
 }
 
 name = None
@@ -56,9 +62,13 @@ COLORS = {
 "green":[0,1,0],
 "blue":[0,0,1],
 "white":[1,1,1],
-"black":[0,0,0],
+"gray":[0.4,0.4,0.4],
+"cyan":[0,1,1],
+"purple":[1,0,1],
 }
 
+if playerColor not in COLORS:
+	playerColor = "red"
 
 def make_dict(data):
 	return ast.literal_eval(data)
@@ -72,8 +82,6 @@ def load_map(data):
 			entities[str(i)] = data[str(i)]
 
 
-
-
 def delete(ID):
 	ID = ID.replace("/del","")
 	if "/del" not in ID:
@@ -82,11 +90,12 @@ def delete(ID):
 
 def render():
 	for i in entities:
-		rect( entities[i][0] , entities[i][1] , entities[i][2] , entities[i][3] , COLORS["red"])
+		rect( entities[i][0] , entities[i][1] , entities[i][2] , entities[i][3] , COLORS[entities[i][4]])
 
 
 def player(x,y):
-	rect(x - playerW / 2 , y - playerH / 2 , playerW , playerH , COLORS["green"])
+	rect(x - 15 , y - 15 , 30 , 30 , COLORS["white"])   #border
+	rect(x - playerW / 2 , y - playerH / 2 , playerW , playerH , COLORS[playerColor]) #main player
 
 def render_map():
 	for i in MAP:
@@ -106,12 +115,12 @@ def clearScreen():
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
 
-def send_data(x,y):
-	global s , host , port
-	s.send("/pos" + str(x) + ","+ str(y) + "&")
+def send_data(x,y,color):
+	global s , host , port , running
+	s.send("/dat" + str(x) + ","+ str(y) + "," + color + "&")
 
 def recv_data(s , host , port):
-	global old_recv
+	global old_recv , running
 	while True:
 		try:
 			recived = old_recv + s.recv(1024)
@@ -120,8 +129,8 @@ def recv_data(s , host , port):
 			
 			old_recv = recived[int(len(recived)) - 1]
 
+			del recived[int(len(recived)) - 1]
 			
-
 			for i in range(0,len(recived)):
 				if "/add" in recived[i]:
 					load_map(recived[i])
@@ -132,7 +141,7 @@ def recv_data(s , host , port):
 		except socket.error as error:
 			print ("[ERR] " + str(socket.error))
 		
-		
+
 
 def main():
 	global users , playerPosX , playerPosY , playerVelX , playerVelY , s , threads , running
@@ -152,7 +161,7 @@ def main():
 
 	pygame.mouse.set_visible(True)
 	pygame.key.set_repeat(1, 0)
-	
+
 	t = threading.Thread(target=recv_data, args=(s , host , port))
 	t.start()
 	threads.append(t)
@@ -164,7 +173,7 @@ def main():
 
 		mousePos = pygame.mouse.get_pos()
 		mouseX = mousePos[0]
-		mouseY = 720 - mousePos[1]
+		mouseY = WIDTH - mousePos[1]
 
 		if playerVelX > maxSpeed:
 			playerVelX = maxSpeed
@@ -180,10 +189,13 @@ def main():
 
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
+				pygame.quit()
 				exit()
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_q:
+					pygame.quit()
 					exit()
+					
 					
 					
 				if event.key == pygame.K_w:
@@ -212,8 +224,8 @@ def main():
 				
 			else:
 				break
-
-		send_data(playerPosX , playerPosY)
+	
+		send_data(playerPosX , playerPosY, playerColor)
 		clearScreen()
 		render()
 		render_map()
