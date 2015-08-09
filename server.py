@@ -51,10 +51,12 @@ def recv_all():
 
 			for i in range(0, int(len(recived))):
 				if "/dat" in recived[i]:
-					data = recived[i]
-					data = data.replace("/dat" , "")
-					data = data.split(",")
+					
 					try:
+						data = recived[i]
+						data = data.replace("/dat" , "")
+						data = data.split(",")
+
 						POS_X = data[0]
 						POS_Y = data[1]
 						COLOR = data[2]
@@ -64,8 +66,8 @@ def recv_all():
 						
 						POS_X = int(POS_X)
 						POS_Y = int(POS_Y)
-						
-						connections[str(c)] = [ POS_X - 15 , POS_Y - 15 , 30 , 30 , COLOR ]
+						if COLOR != "":
+							connections[str(c)] = [ POS_X - 15 , POS_Y - 15 , 30 , 30 , COLOR ]
 					
 					except:
 						KeyError
@@ -76,22 +78,21 @@ def send_all():
 	global users
 	for c in conn:
 		try:
-			client = str(c)
 			c.send("/add" + str( connections ) + "&")
 
 		
 		except socket.error:
-			try:
-				
-				if connections[client]:
-					del connections[client]
+			i = conn.index(c)
+			data = str(c)
+			del conn[i]
+			del connections[data]
 
-				
-					for c in conn:
-						c.send("/del")
-						c.send(str(data) + "&")
-			except:
-				KeyError
+			for c in conn:
+				c.send("/del"+data+"&")
+			
+					
+					
+
 
 
 def new_connection(s , host , port):
