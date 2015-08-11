@@ -7,6 +7,7 @@ from random import *
 
 host = raw_input("host: ")
 port = int(raw_input("port: "))
+max_users = int(raw_input("maximum amount of players: "))
 
 s = socket.socket()
 
@@ -66,6 +67,7 @@ def recv_all():
 						
 						POS_X = int(POS_X)
 						POS_Y = int(POS_Y)
+						
 						if COLOR != "":
 							connections[str(c)] = [ POS_X - 15 , POS_Y - 15 , 30 , 30 , COLOR ]
 					
@@ -82,28 +84,26 @@ def send_all():
 
 		
 		except socket.error:
-			i = conn.index(c)
-			data = str(c)
-			del conn[i]
-			del connections[data]
+			if len(conn) > 0:
+				i = conn.index(c)
+				data = str(c)
+				del conn[i]
+				del connections[data]
 
-			for c in conn:
-				c.send("/del"+data+"&")
+				for c in conn:
+					c.send("/del"+data+"&")
 			
-					
-					
-
-
 
 def new_connection(s , host , port):
 	global users
 	while True:
-		c , addr = s.accept()
-		print("[ALERT] New connection from: " + str(addr[0])) + " : "+str(addr[1])
-		conn.append(c)
-		connections[str(c)] = [0,0,30,30,"blue"]
+		if len(conn) < max_users:
+			c , addr = s.accept()
+			print("[ALERT] New connection from: " + str(addr[0])) + " : "+str(addr[1])
+			conn.append(c)
+			connections[str(c)] = [0,0,30,30,"blue"]
 
-		main()
+			main()
 
 def main():
 	t = threading.Thread(target=new_connection, args=(s , host , port))
